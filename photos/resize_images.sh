@@ -1,15 +1,41 @@
 #!/bin/bash
 
 # Script to resize images based on aspect ratio
-# Usage: ./resize_images.sh <input_image>
+# Usage: ./resize_images.sh <input_image> [max_dimension]
 
+# Print usage helper
+print_usage() {
+    echo "Usage: $0 <input_image> [max_dimension]"
+    echo "  <input_image>: Relative or absolute path to the original photo (e.g. ./raw/photo.jpg)."
+    echo "  [max_dimension]: Optional override for the larger output's max pixel size (e.g. 1800)."
+    echo "Example: $0 photo.jpg 1600"
+    echo "Description: Generates a thumbnail and resized version based on aspect ratio."
+    echo "Dimensions: The script inspects the image's width/height and automatically picks the correct"
+    echo "  target sizes (e.g. 200px max for square thumbnails, up to 600px for wide shots)."
+    echo "  Provide [max_dimension] or edit the thumbnail_max/smaller_max values below to customize."
+}
+
+# Handle help flag or missing argument
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <input_image>"
-    echo "Example: $0 photo.jpg"
+    print_usage
     exit 1
 fi
 
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    print_usage
+    exit 0
+fi
+
 input_image="$1"
+custom_max="$2"
+
+# Validate optional max dimension
+if [ -n "$custom_max" ]; then
+    if ! [[ "$custom_max" =~ ^[0-9]+$ ]]; then
+        echo "Error: max_dimension must be a positive integer (pixels)."
+        exit 1
+    fi
+fi
 
 # Check if input file exists
 if [ ! -f "$input_image" ]; then
@@ -47,7 +73,7 @@ elif (( $(echo "$aspect_ratio > 1.2 && $aspect_ratio <= 2.5" | bc -l) )); then
 elif (( $(echo "$aspect_ratio >= 0.4 && $aspect_ratio < 0.8" | bc -l) )); then
     # Tall (2x2, 3x2)
     if (( $(echo "$aspect_ratio >= 0.5" | bc -l) )); then
-        aspect_category="2x2"
+        aspect_category="1x2"
         thumbnail_max=400
         smaller_max=1200
     else
@@ -60,6 +86,11 @@ else
     aspect_category="1x1"
     thumbnail_max=200
     smaller_max=1200
+fi
+
+# Override smaller_max if user provided a value
+if [ -n "$custom_max" ]; then
+    smaller_max="$custom_max"
 fi
 
 echo "Aspect ratio: $aspect_ratio (classified as $aspect_category)"
