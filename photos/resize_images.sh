@@ -59,21 +59,14 @@ if (( $(echo "$aspect_ratio >= 0.8 && $aspect_ratio <= 1.2" | bc -l) )); then
     aspect_category="1x1"
     thumbnail_max=200
     smaller_max=1200
-elif (( $(echo "$aspect_ratio > 1.2 && $aspect_ratio <= 2.5" | bc -l) )); then
-    # Wide (2x1, 3x1)
-    if (( $(echo "$aspect_ratio >= 2.0" | bc -l) )); then
+elif (( $(echo "$aspect_ratio > 1.2" | bc -l) )); then
+    # Wide (3x2, 2x1, 3x1)
+    if (( $(echo "$aspect_ratio >= 2.5" | bc -l) )); then
         aspect_category="3x1"
         thumbnail_max=600
         smaller_max=1600
-    else
+    elif (( $(echo "$aspect_ratio >= 1.75" | bc -l) )); then
         aspect_category="2x1"
-        thumbnail_max=400
-        smaller_max=1200
-    fi
-elif (( $(echo "$aspect_ratio >= 0.4 && $aspect_ratio < 0.8" | bc -l) )); then
-    # Tall (2x2, 3x2)
-    if (( $(echo "$aspect_ratio >= 0.5" | bc -l) )); then
-        aspect_category="1x2"
         thumbnail_max=400
         smaller_max=1200
     else
@@ -81,6 +74,11 @@ elif (( $(echo "$aspect_ratio >= 0.4 && $aspect_ratio < 0.8" | bc -l) )); then
         thumbnail_max=600
         smaller_max=1800
     fi
+elif (( $(echo "$aspect_ratio >= 0.4 && $aspect_ratio < 0.8" | bc -l) )); then
+    # Tall (1x2)
+    aspect_category="1x2"
+    thumbnail_max=400
+    smaller_max=1200
 else
     # Default to 1x1 for very extreme ratios
     aspect_category="1x1"
@@ -98,12 +96,18 @@ echo "Thumbnail max dimension: ${thumbnail_max}px"
 echo "Smaller version max dimension: ${smaller_max}px"
 
 # Generate output filenames
+dir=$(dirname "$input_image")
 filename=$(basename "$input_image")
 name_without_ext="${filename%.*}"
 extension="${filename##*.}"
 
-thumbnail_name="${name_without_ext}-thumbnail.${extension}"
-smaller_name="${name_without_ext}.${extension}"
+if [ "$dir" = "." ]; then
+    thumbnail_name="${name_without_ext}-thumbnail.${extension}"
+    smaller_name="${name_without_ext}.${extension}"
+else
+    thumbnail_name="${dir}/${name_without_ext}-thumbnail.${extension}"
+    smaller_name="${dir}/${name_without_ext}.${extension}"
+fi
 
 # Create thumbnail
 echo "Creating thumbnail: $thumbnail_name"
